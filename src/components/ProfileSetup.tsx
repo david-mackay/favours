@@ -2,6 +2,7 @@
 
 import { type FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Navbar } from "@/components/Navbar";
 
 interface ProfileSetupProps {
   /** When provided, form is in edit mode with pre-filled values */
@@ -93,15 +94,26 @@ export function ProfileSetup({ initialData }: ProfileSetupProps = {}) {
     }
   };
 
+  const isEdit = Boolean(initialData?.username);
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-zinc-50 dark:bg-black">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen pb-24 md:pb-0 py-8 px-4 bg-zinc-50 dark:bg-zinc-950">
+      <Navbar />
+      <main className="w-full max-w-md mx-auto space-y-8 mt-8">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">
-            Welcome to favours<span className="text-violet-500">.xyz</span>
+            {isEdit ? (
+              "Edit profile"
+            ) : (
+              <>
+                Welcome to favours<span className="text-violet-500">.xyz</span>
+              </>
+            )}
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Set up your profile to start posting and claiming favours.
+            {isEdit
+              ? "Update your username, bio, or profile photo."
+              : "Set up your profile to start posting and claiming favours."}
           </p>
         </div>
 
@@ -197,7 +209,7 @@ export function ProfileSetup({ initialData }: ProfileSetupProps = {}) {
                 : "Create Profile"}
           </button>
         </form>
-      </div>
+      </main>
     </div>
   );
 }

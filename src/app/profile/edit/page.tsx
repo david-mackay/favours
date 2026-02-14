@@ -15,24 +15,14 @@ export default async function EditProfilePage() {
     | undefined;
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-zinc-50 dark:bg-black">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">
-            Edit profile
-          </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Update your username, bio, or profile photo.
-          </p>
-        </div>
-        <ProfileSetup
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+      <ProfileSetup
           initialData={{
             username: profile?.username,
             bio: profile?.bio ?? undefined,
             image: profile?.image ?? undefined,
           }}
         />
-      </div>
     </div>
   );
 }

@@ -22,6 +22,16 @@ export async function GET() {
 
     try {
       const profile = await getProfile(user.walletAddress);
+      const hasProfile = profile?.profile != null;
+
+      if (!hasProfile) {
+        return NextResponse.json({
+          profile: null,
+          socialCounts: { followers: 0, following: 0 },
+          needsSetup: true,
+        });
+      }
+
       const [followers, following] = await Promise.all([
         getFollowersCount(user.walletAddress).catch(() => ({ count: 0 })),
         getFollowingCount(user.walletAddress).catch(() => ({ count: 0 })),
@@ -38,8 +48,12 @@ export async function GET() {
         },
       });
     } catch {
-      // Profile doesn't exist yet
-      return NextResponse.json({ profile: null, needsSetup: true });
+      // Profile fetch failed (e.g. network error)
+      return NextResponse.json({
+        profile: null,
+        socialCounts: { followers: 0, following: 0 },
+        needsSetup: true,
+      });
     }
   } catch (error) {
     console.error("/api/profile GET error", error);

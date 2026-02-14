@@ -13,9 +13,23 @@ export default function AuthPage() {
   const { isConnected } = useAppKitAccount();
 
   useEffect(() => {
-    if (walletAuth.status === "authenticated") {
-      router.replace("/");
-    }
+    if (walletAuth.status !== "authenticated") return;
+
+    const checkProfile = async () => {
+      try {
+        const res = await fetch("/api/profile", { cache: "no-store" });
+        const data = await res.json();
+        if (data.needsSetup) {
+          router.replace("/profile/setup");
+        } else {
+          router.replace("/");
+        }
+      } catch {
+        router.replace("/");
+      }
+    };
+
+    void checkProfile();
   }, [walletAuth.status, router]);
 
   const isLoading =
