@@ -177,8 +177,11 @@ export function Navbar() {
         </div>
       </nav>
 
-      {/* Bottom nav - mobile only */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
+      {/* Bottom nav - mobile only, locked in place */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 pb-[env(safe-area-inset-bottom)]"
+        style={{ transform: "translateZ(0)" }}
+      >
         <div className="mx-auto max-w-3xl flex items-center justify-around h-16 px-2">
           {navLinks.map((link) => (
             <Link

@@ -47,7 +47,7 @@ export function FavourFeed() {
   return (
     <div className="space-y-4">
       {/* Filter tabs */}
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-900 w-full sm:w-fit overflow-x-auto">
+      <div className="flex items-center gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-900 w-full sm:w-fit flex-wrap">
         {filters.map((f) => (
           <button
             key={f.key}

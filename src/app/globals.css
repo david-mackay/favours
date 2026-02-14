@@ -25,10 +25,24 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Lock viewport: no horizontal scroll, vertical only */
+html {
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-width: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-width: 100%;
+  min-height: 100dvh;
+  min-height: 100vh;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: contain;
 }
 
 /* Smooth page transitions */

@@ -1,8 +1,14 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppKitProvider } from "@/context/appkit";
 import { ThemeProvider } from "@/components/ThemeProvider";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,12 +32,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="overflow-x-hidden">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}
       >
         <ThemeProvider>
-          <AppKitProvider>{children}</AppKitProvider>
+          <AppKitProvider>
+            <div className="min-h-screen w-full max-w-full overflow-x-hidden">
+              {children}
+            </div>
+          </AppKitProvider>
         </ThemeProvider>
       </body>
     </html>

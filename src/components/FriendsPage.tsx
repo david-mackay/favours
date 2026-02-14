@@ -150,7 +150,7 @@ export function FriendsPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by username..."
-            className="w-full px-4 py-3 pl-10 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+            className="w-full px-4 py-3 pl-10 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 text-base focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
           />
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400"
