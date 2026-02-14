@@ -22,6 +22,12 @@ export const TOKENS: TokenDef[] = [
     decimals: 9,
     icon: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
   },
+  {
+    symbol: "GOLD",
+    mint: "AymATz4TCL9sWNEEV9Kvyz45CHVhDZ6kUgjTJPzLpU9P",
+    decimals: 6,
+    icon: "https://ipfs.io/ipfs/bafkreibth2yh4jlehmf5nmfgy763z4yvwxlz7zmuohmhp53un6wrho5t2q",
+  },
 ];
 
 export function TokenSelectorModal({
