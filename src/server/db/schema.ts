@@ -60,6 +60,8 @@ export const favours = pgTable(
     status: varchar("status", { length: 20 }).notNull().default("open"),
     claimerWallet: text("claimer_wallet"),
     category: varchar("category", { length: 50 }),
+    visibility: varchar("visibility", { length: 20 }).notNull().default("public"),
+    allowedViewers: text("allowed_viewers"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     completedAt: timestamp("completed_at"),

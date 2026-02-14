@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from "@/server/auth/session";
 import { db } from "@/server/db";
 import { favours } from "@/server/db/schema";
 import { getProfileInfoForWallet } from "@/server/tapestry";
+import { canViewFavour } from "@/server/favour-visibility";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,13 @@ export async function GET(
     });
 
     if (!favour) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const user = await getAuthenticatedUser();
+    const viewerWallet = user?.walletAddress ?? null;
+    const allowed = await canViewFavour(favour, viewerWallet);
+    if (!allowed) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 

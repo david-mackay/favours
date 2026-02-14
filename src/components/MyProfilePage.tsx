@@ -159,22 +159,28 @@ export function MyProfilePage({ walletAddress }: MyProfilePageProps) {
 
               {/* Social counts */}
               <div className="flex gap-6 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                <div className="text-center">
+                <Link
+                  href={`/profile/${walletAddress}/followers`}
+                  className="text-center hover:opacity-80 transition-opacity"
+                >
                   <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                     {counts?.followers ?? 0}
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-400">
                     Followers
                   </div>
-                </div>
-                <div className="text-center">
+                </Link>
+                <Link
+                  href={`/profile/${walletAddress}/following`}
+                  className="text-center hover:opacity-80 transition-opacity"
+                >
                   <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                     {counts?.following ?? 0}
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-400">
                     Following
                   </div>
-                </div>
+                </Link>
                 <div className="text-center">
                   <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                     {favours.length}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Favour } from "@/server/db/schema";
 
 type FavourWithUsernames = Favour & {
@@ -22,6 +23,12 @@ const statusColors: Record<string, string> = {
     "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300",
   completed: "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300",
   cancelled: "bg-zinc-100 text-zinc-600 dark:bg-zinc-500/20 dark:text-zinc-400",
+};
+
+const visibilityLabels: Record<string, string> = {
+  public: "🌐 Public",
+  followers: "👥 Followers",
+  close: "🔒 Close",
 };
 
 const categoryEmoji: Record<string, string> = {
@@ -55,6 +62,7 @@ export function FavourCard({
   currentWallet,
   onDelete,
 }: FavourCardProps) {
+  const router = useRouter();
   const isCreator = currentWallet === favour.creatorWallet;
   const isClaimer = currentWallet === favour.claimerWallet;
   const canDelete =
@@ -121,13 +129,25 @@ export function FavourCard({
                 {isCreator ? (
                   "You"
                 ) : favour.creatorUsername ? (
-                  <Link
-                    href={`/profile/${favour.creatorWallet}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      router.push(`/profile/${favour.creatorWallet}`);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        router.push(`/profile/${favour.creatorWallet}`);
+                      }
+                    }}
+                    className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors cursor-pointer"
                   >
                     @{favour.creatorUsername}
-                  </Link>
+                  </span>
                 ) : (
                   truncateWallet(favour.creatorWallet)
                 )}
@@ -163,14 +183,21 @@ export function FavourCard({
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-2 pt-1">
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-              statusColors[favour.status] ?? statusColors.open
-            }`}
-          >
-            {favour.status}
-          </span>
+        <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                statusColors[favour.status] ?? statusColors.open
+              }`}
+            >
+              {favour.status}
+            </span>
+            {favour.visibility && favour.visibility !== "public" && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
+                {visibilityLabels[favour.visibility] ?? favour.visibility}
+              </span>
+            )}
+          </div>
 
           <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
             {favour.claimerWallet && (

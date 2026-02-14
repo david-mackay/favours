@@ -1,12 +1,21 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAppKitAccount } from "@reown/appkit/react";
 import {
   TOKENS,
   TokenSelectorModal,
   TokenButton,
 } from "@/components/TokenSelector";
+
+type Visibility = "public" | "followers" | "close";
+
+type FollowerItem = {
+  id: string;
+  username: string;
+  walletAddress?: string;
+};
 
 export interface CreateFavourFormProps {
   onSuccess?: (favourId: string) => void;
@@ -33,7 +42,48 @@ export function CreateFavourForm({ onSuccess }: CreateFavourFormProps = {}) {
   const [bountyAmount, setBountyAmount] = useState("");
   const [bountyToken, setBountyToken] = useState("USDC");
   const [category, setCategory] = useState("errand");
+  const [visibility, setVisibility] = useState<Visibility>("public");
+  const [allowedViewers, setAllowedViewers] = useState<string[]>([]);
+  const [followers, setFollowers] = useState<FollowerItem[]>([]);
+  const [followersLoading, setFollowersLoading] = useState(false);
   const [tokenModalOpen, setTokenModalOpen] = useState(false);
+
+  const { address } = useAppKitAccount();
+
+  const fetchFollowers = useCallback(async () => {
+    if (!address) return;
+    setFollowersLoading(true);
+    try {
+      const res = await fetch(`/api/profile/${address}/followers?limit=100`);
+      const data = await res.json();
+      const raw = data.users ?? data.profiles ?? [];
+      setFollowers(
+        raw.map(
+          (p: { id?: string; username?: string; wallet?: { id?: string } }) => ({
+            id: p.wallet?.id ?? p.id ?? "",
+            username: p.username ?? "Anonymous",
+            walletAddress: p.wallet?.id ?? p.id,
+          })
+        )
+      );
+    } catch {
+      setFollowers([]);
+    } finally {
+      setFollowersLoading(false);
+    }
+  }, [address]);
+
+  useEffect(() => {
+    if (visibility === "close") void fetchFollowers();
+  }, [visibility, fetchFollowers]);
+
+  const toggleAllowedViewer = (walletId: string) => {
+    setAllowedViewers((prev) =>
+      prev.includes(walletId)
+        ? prev.filter((w) => w !== walletId)
+        : [...prev, walletId]
+    );
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -50,6 +100,8 @@ export function CreateFavourForm({ onSuccess }: CreateFavourFormProps = {}) {
           bountyAmount: parseFloat(bountyAmount),
           bountyToken,
           category,
+          visibility,
+          allowedViewers: visibility === "close" ? allowedViewers : undefined,
         }),
       });
 
@@ -167,10 +219,105 @@ export function CreateFavourForm({ onSuccess }: CreateFavourFormProps = {}) {
         onSelect={setBountyToken}
       />
 
+      {/* Visibility */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          Who can see this?
+        </label>
+        <div className="space-y-2">
+          {[
+            {
+              value: "public" as const,
+              label: "Public",
+              desc: "Anyone on the app",
+              icon: "🌐",
+            },
+            {
+              value: "followers" as const,
+              label: "Followers",
+              desc: "Only people who follow you",
+              icon: "👥",
+            },
+            {
+              value: "close" as const,
+              label: "Close",
+              desc: "Select specific people",
+              icon: "🔒",
+            },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setVisibility(opt.value)}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
+                visibility === opt.value
+                  ? "border-violet-500 bg-violet-50 dark:bg-violet-500/10"
+                  : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+              }`}
+            >
+              <span className="text-xl">{opt.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  {opt.label}
+                </p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  {opt.desc}
+                </p>
+              </div>
+              {visibility === opt.value && (
+                <span className="text-violet-600 dark:text-violet-400">✓</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {visibility === "close" && (
+          <div className="mt-3 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 max-h-40 overflow-y-auto">
+            <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+              Select who can see this favour
+            </p>
+            {followersLoading ? (
+              <p className="text-xs text-zinc-500">Loading followers...</p>
+            ) : followers.length === 0 ? (
+              <p className="text-xs text-zinc-500">
+                No followers yet. Share your profile to get followers first.
+              </p>
+            ) : (
+              <div className="space-y-1">
+                {followers.map((f) => {
+                  const pid = f.walletAddress ?? f.id;
+                  return (
+                    <label
+                      key={pid}
+                      className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded px-2 -mx-2"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={allowedViewers.includes(pid)}
+                        onChange={() => toggleAllowedViewer(pid)}
+                        className="rounded border-zinc-300 dark:border-zinc-600"
+                      />
+                      <span className="text-sm text-zinc-800 dark:text-zinc-200 truncate">
+                        @{f.username}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Submit */}
       <button
         type="submit"
-        disabled={submitting || !title.trim() || !bountyAmount}
+        disabled={
+          submitting ||
+          !title.trim() ||
+          !bountyAmount ||
+          (visibility === "close" && allowedViewers.length === 0)
+        }
         className="w-full py-3 px-4 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Posting..." : "Post Favour"}

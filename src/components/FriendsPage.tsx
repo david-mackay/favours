@@ -18,11 +18,33 @@ type ProfileItem = {
 export function FriendsPage() {
   const { address } = useAppKitAccount();
   const [friends, setFriends] = useState<ProfileItem[]>([]);
+  const [suggested, setSuggested] = useState<ProfileItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<ProfileItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [followStatus, setFollowStatus] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+
+  const fetchSuggested = useCallback(async () => {
+    try {
+      const res = await fetch("/api/profile/suggested");
+      if (!res.ok) return;
+      const data = await res.json();
+      const raw = data.profiles ?? [];
+      setSuggested(
+        raw.map((p: Record<string, unknown>) => ({
+          id: String(p.id ?? p.walletAddress ?? ""),
+          username: String(p.username ?? "Anonymous"),
+          bio: (p.bio as string | null) ?? null,
+          image: (p.image as string | null) ?? null,
+          walletAddress: String(p.walletAddress ?? p.id ?? ""),
+          followers: (p.followers as number) ?? undefined,
+        }))
+      );
+    } catch {
+      setSuggested([]);
+    }
+  }, []);
 
   const fetchFriends = useCallback(async () => {
     if (!address) return;
@@ -57,6 +79,10 @@ export function FriendsPage() {
   useEffect(() => {
     void fetchFriends();
   }, [fetchFriends]);
+
+  useEffect(() => {
+    void fetchSuggested();
+  }, [fetchSuggested]);
 
   // Debounced search
   useEffect(() => {
@@ -166,6 +192,35 @@ export function FriendsPage() {
             />
           </svg>
         </div>
+
+        {/* Suggested users (when not searching) */}
+        {searchQuery.trim().length < 2 && suggested.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+              Suggested
+            </h2>
+            <div className="space-y-2">
+              {suggested
+                .filter((p) => {
+                  const pid = profileId(p);
+                  return pid !== address && !friends.some((f) => profileId(f) === pid);
+                })
+                .map((p) => {
+                  const pid = profileId(p);
+                  return (
+                    <FriendCard
+                      key={pid}
+                      profile={p}
+                      profileId={pid}
+                      isFollowing={followStatus[pid]}
+                      onFollow={() => handleFollow(pid)}
+                      onMount={() => checkFollowStatus(pid)}
+                    />
+                  );
+                })}
+            </div>
+          </div>
+        )}
 
         {/* Search results */}
         {searchQuery.trim().length >= 2 && (

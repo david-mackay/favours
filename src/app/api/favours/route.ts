@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { getAuthenticatedUser } from "@/server/auth/session";
 import { db } from "@/server/db";
 import { favours } from "@/server/db/schema";
 import { getProfileInfoForWallet } from "@/server/tapestry";
+import { canViewFavour } from "@/server/favour-visibility";
 
 export const runtime = "nodejs";
 
@@ -24,72 +25,48 @@ export async function GET(req: NextRequest) {
 
     const user = await getAuthenticatedUser();
 
-    const conditions = [];
-
-    if (status) {
-      conditions.push(eq(favours.status, status));
-    }
-
+    // Build query - mine and claimed bypass visibility (creator/claimer always sees own)
+    let rows;
     if (filter === "mine" && user) {
-      conditions.push(eq(favours.creatorWallet, user.walletAddress));
+      rows = await db.query.favours.findMany({
+        where: status
+          ? (f, { and, eq: eq_ }) =>
+              and(
+                eq_(f.creatorWallet, user.walletAddress),
+                eq_(f.status, status)
+              )
+          : eq(favours.creatorWallet, user.walletAddress),
+        orderBy: [desc(favours.createdAt)],
+        limit,
+        offset,
+      });
     } else if (filter === "claimed" && user) {
-      conditions.push(eq(favours.claimerWallet, user.walletAddress));
-    }
-
-    const where =
-      conditions.length > 0
-        ? conditions.length === 1
-          ? conditions[0]
-          : inArray(favours.status, ["open"]) // fallback
-        : undefined;
-
-    // Build a proper query
-    let query;
-    if (filter === "mine" && user) {
-      if (status) {
-        query = db.query.favours.findMany({
-          where: (f, { and, eq: eq_ }) =>
-            and(
-              eq_(f.creatorWallet, user.walletAddress),
-              eq_(f.status, status)
-            ),
-          orderBy: [desc(favours.createdAt)],
-          limit,
-          offset,
-        });
-      } else {
-        query = db.query.favours.findMany({
-          where: eq(favours.creatorWallet, user.walletAddress),
-          orderBy: [desc(favours.createdAt)],
-          limit,
-          offset,
-        });
-      }
-    } else if (filter === "claimed" && user) {
-      query = db.query.favours.findMany({
+      rows = await db.query.favours.findMany({
         where: eq(favours.claimerWallet, user.walletAddress),
         orderBy: [desc(favours.createdAt)],
         limit,
         offset,
       });
-    } else if (status) {
-      query = db.query.favours.findMany({
-        where: eq(favours.status, status),
-        orderBy: [desc(favours.createdAt)],
-        limit,
-        offset,
-      });
     } else {
-      // Default: show all open favours
-      query = db.query.favours.findMany({
-        where: eq(favours.status, "open"),
+      // All feed: fetch more than needed, filter by visibility, then slice
+      const statusFilter = status ?? "open";
+      const allRows = await db.query.favours.findMany({
+        where: eq(favours.status, statusFilter),
         orderBy: [desc(favours.createdAt)],
-        limit,
-        offset,
+        limit: Math.min(limit * 3, 100), // fetch extra to account for filtering
+        offset: 0,
       });
-    }
 
-    const rows = await query;
+      const viewerWallet = user?.walletAddress ?? null;
+      const visible: typeof allRows = [];
+      for (const row of allRows) {
+        if (await canViewFavour(row, viewerWallet)) {
+          visible.push(row);
+          if (visible.length >= limit + offset) break;
+        }
+      }
+      rows = visible.slice(offset, offset + limit);
+    }
 
     // Enrich with profile info (username, image) from Tapestry
     const wallets = new Set<string>();
@@ -149,6 +126,8 @@ export async function POST(req: NextRequest) {
       bountyToken?: string;
       category?: string;
       expiresAt?: string;
+      visibility?: "public" | "followers" | "close";
+      allowedViewers?: string[];
     };
 
     if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
@@ -166,6 +145,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const visibility = body.visibility ?? "public";
+    if (!["public", "followers", "close"].includes(visibility)) {
+      return NextResponse.json(
+        { error: "Invalid visibility" },
+        { status: 400 }
+      );
+    }
+
+    let allowedViewers: string | null = null;
+    if (visibility === "close" && Array.isArray(body.allowedViewers)) {
+      const valid = body.allowedViewers.filter(
+        (v): v is string => typeof v === "string" && v.trim().length > 0
+      );
+      if (valid.length > 0) {
+        allowedViewers = JSON.stringify(valid);
+      }
+    }
+
     const created = await db
       .insert(favours)
       .values({
@@ -176,6 +173,8 @@ export async function POST(req: NextRequest) {
         bountyToken: body.bountyToken ?? "USDC",
         category: body.category ?? null,
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+        visibility,
+        allowedViewers,
       })
       .returning()
       .then((rows) => rows[0]);
