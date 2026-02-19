@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { FavourCard } from "@/components/FavourCard";
 import type { Favour } from "@/server/db/schema";
@@ -35,6 +36,7 @@ export function UserProfilePage({
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const router = useRouter();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -164,21 +166,37 @@ export function UserProfilePage({
                 </div>
 
                 {profile.walletAddress !== currentWallet && (
-                  <button
-                    onClick={handleFollow}
-                    disabled={followLoading}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
-                      isFollowing
-                        ? "border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900"
-                        : "bg-violet-600 hover:bg-violet-700 text-white"
-                    }`}
-                  >
-                    {followLoading
-                      ? "..."
-                      : isFollowing
-                        ? "Following"
-                        : "Follow"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        const p = profile as {
+                          walletAddress?: string;
+                          wallet_address?: string;
+                        };
+                        const wallet =
+                          p.walletAddress ?? p.wallet_address ?? profileId;
+                        router.push(`/messages/${wallet}`);
+                      }}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                    >
+                      Message
+                    </button>
+                    <button
+                      onClick={handleFollow}
+                      disabled={followLoading}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                        isFollowing
+                          ? "border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                          : "bg-violet-600 hover:bg-violet-700 text-white"
+                      }`}
+                    >
+                      {followLoading
+                        ? "..."
+                        : isFollowing
+                          ? "Following"
+                          : "Follow"}
+                    </button>
+                  </div>
                 )}
               </div>
 

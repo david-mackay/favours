@@ -56,6 +56,9 @@ importers:
       socialfi:
         specifier: ^0.1.14
         version: 0.1.14
+      socket.io-client:
+        specifier: ^4.8.3
+        version: 4.8.3(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       tweetnacl:
         specifier: ^1.0.3
         version: 1.0.3

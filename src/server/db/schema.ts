@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -80,80 +79,32 @@ export const favours = pgTable(
   })
 );
 
-// ── Friendships ─────────────────────────────────────────────────────────────
-export const friendships = pgTable(
-  "friendships",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId1: uuid("user_id_1").notNull(),
-    userId2: uuid("user_id_2").notNull(),
-    status: varchar("status", { length: 20 }).notNull().default("pending"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => ({
-    friendshipUnique: uniqueIndex("friendships_unique").on(
-      table.userId1,
-      table.userId2
-    ),
-    user1Idx: index("friendships_user1_idx").on(table.userId1),
-    user2Idx: index("friendships_user2_idx").on(table.userId2),
-  })
-);
-
 // ── Messages ────────────────────────────────────────────────────────────────
+// Uses wallet addresses directly — profile data (display name, avatar)
+// is fetched from Tapestry at the application layer, not stored here.
 export const messages = pgTable(
   "messages",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    senderId: uuid("sender_id").notNull(),
-    receiverId: uuid("receiver_id").notNull(),
+    senderWallet: text("sender_wallet").notNull(),
+    receiverWallet: text("receiver_wallet").notNull(),
     content: text("content"),
     type: varchar("type", { length: 20 }).notNull().default("text"),
     mediaUrl: text("media_url"),
     amount: numeric("amount"),
     transactionHash: text("transaction_hash"),
+    mintAddress: text("mint_address"),
+    tokenSymbol: varchar("token_symbol", { length: 20 }),
+    tokenName: text("token_name"),
+    nftName: text("nft_name"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     isRead: boolean("is_read").default(false),
   },
   (table) => ({
-    senderIdx: index("messages_sender_idx").on(table.senderId),
-    receiverIdx: index("messages_receiver_idx").on(table.receiverId),
+    senderIdx: index("messages_sender_idx").on(table.senderWallet),
+    receiverIdx: index("messages_receiver_idx").on(table.receiverWallet),
   })
 );
-
-// ── Relations ───────────────────────────────────────────────────────────────
-export const usersRelations = relations(users, ({ many }) => ({
-  friendships1: many(friendships, { relationName: "friendships_user1" }),
-  friendships2: many(friendships, { relationName: "friendships_user2" }),
-  sentMessages: many(messages, { relationName: "messages_sender" }),
-  receivedMessages: many(messages, { relationName: "messages_receiver" }),
-}));
-
-export const friendshipsRelations = relations(friendships, ({ one }) => ({
-  user1: one(users, {
-    fields: [friendships.userId1],
-    references: [users.id],
-    relationName: "friendships_user1",
-  }),
-  user2: one(users, {
-    fields: [friendships.userId2],
-    references: [users.id],
-    relationName: "friendships_user2",
-  }),
-}));
-
-export const messagesRelations = relations(messages, ({ one }) => ({
-  sender: one(users, {
-    fields: [messages.senderId],
-    references: [users.id],
-    relationName: "messages_sender",
-  }),
-  receiver: one(users, {
-    fields: [messages.receiverId],
-    references: [users.id],
-    relationName: "messages_receiver",
-  }),
-}));
 
 // ── Types ───────────────────────────────────────────────────────────────────
 export type User = typeof users.$inferSelect;

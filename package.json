@@ -27,6 +27,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "socialfi": "^0.1.14",
+    "socket.io-client": "^4.8.3",
     "tweetnacl": "^1.0.3",
     "zod": "^3.25.76"
   },
