@@ -38,6 +38,9 @@ function formatTime(iso: string) {
 function previewText(conv: Conversation) {
   if (conv.lastMessageType === "gift_token") return "Sent tokens";
   if (conv.lastMessageType === "gift_nft") return "Sent an NFT";
+  if (conv.lastMessageType === "favour_share") return "Shared a favour";
+  if (conv.lastMessageType === "gift_envelope") return "🧧 Sent a red envelope";
+  if (conv.lastMessageType === "gift_gacha") return "🎰 Sent a gacha envelope";
   return conv.lastMessage ?? "";
 }
 

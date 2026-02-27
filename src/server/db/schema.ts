@@ -97,6 +97,8 @@ export const messages = pgTable(
     tokenSymbol: varchar("token_symbol", { length: 20 }),
     tokenName: text("token_name"),
     nftName: text("nft_name"),
+    favourId: uuid("favour_id"),
+    isOpened: boolean("is_opened").default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     isRead: boolean("is_read").default(false),
   },
@@ -106,8 +108,33 @@ export const messages = pgTable(
   })
 );
 
+// ── Gacha NFT Pool ──────────────────────────────────────────────────────────
+export const gachaNfts = pgTable(
+  "gacha_nfts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    mintAddress: text("mint_address").notNull(),
+    name: text("name").notNull(),
+    imageUrl: text("image_url").notNull(),
+    rarity: varchar("rarity", { length: 20 }).notNull().default("common"),
+    isClaimed: boolean("is_claimed").default(false),
+    claimedByWallet: text("claimed_by_wallet"),
+    claimedAt: timestamp("claimed_at"),
+    messageId: uuid("message_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    mintAddressIdx: uniqueIndex("gacha_nfts_mint_address_unique").on(
+      table.mintAddress
+    ),
+    rarityIdx: index("gacha_nfts_rarity_idx").on(table.rarity),
+    isClaimedIdx: index("gacha_nfts_is_claimed_idx").on(table.isClaimed),
+  })
+);
+
 // ── Types ───────────────────────────────────────────────────────────────────
 export type User = typeof users.$inferSelect;
 export type Favour = typeof favours.$inferSelect;
 export type NewFavour = typeof favours.$inferInsert;
 export type Message = typeof messages.$inferSelect;
+export type GachaNft = typeof gachaNfts.$inferSelect;

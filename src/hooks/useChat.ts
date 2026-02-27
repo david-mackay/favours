@@ -6,12 +6,20 @@ import { io, Socket } from "socket.io-client";
 const CHAT_SERVER_URL =
   process.env.NEXT_PUBLIC_CHAT_SERVER_URL ?? "http://localhost:3001";
 
+export type MessageType =
+  | "text"
+  | "gift_token"
+  | "gift_nft"
+  | "favour_share"
+  | "gift_envelope"
+  | "gift_gacha";
+
 export interface ChatMessage {
   id: string;
   sender_wallet: string;
   receiver_wallet: string;
   content: string | null;
-  type: "text" | "gift_token" | "gift_nft";
+  type: MessageType;
   media_url: string | null;
   amount: string | null;
   transaction_hash: string | null;
@@ -19,6 +27,8 @@ export interface ChatMessage {
   token_symbol: string | null;
   token_name: string | null;
   nft_name: string | null;
+  favour_id: string | null;
+  is_opened: boolean;
   created_at: string;
   is_read: boolean;
 }
@@ -178,7 +188,56 @@ export function useChat(otherWallet: string) {
     [otherWallet],
   );
 
-  return { connected, messages, conversationId, sendMessage, sendGift };
+  const sendFavourShare = useCallback(
+    (favourId: string, content?: string) => {
+      const token = sessionTokenRef.current;
+      if (!token || !socketRef.current) return;
+
+      socketRef.current.emit("send_favour_share", {
+        session_token: token,
+        recipientWallet: otherWallet,
+        favourId,
+        content,
+      });
+    },
+    [otherWallet],
+  );
+
+  const sendEnvelope = useCallback(
+    (envelope: {
+      type: "gift_envelope" | "gift_gacha";
+      transactionHash: string;
+      amount: string;
+      content?: string;
+    }) => {
+      const token = sessionTokenRef.current;
+      if (!token || !socketRef.current) return;
+
+      socketRef.current.emit("send_envelope", {
+        session_token: token,
+        recipientWallet: otherWallet,
+        ...envelope,
+      });
+    },
+    [otherWallet],
+  );
+
+  const updateMessage = useCallback((messageId: string, updates: Partial<ChatMessage>) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, ...updates } : m))
+    );
+  }, []);
+
+  return {
+    connected,
+    messages,
+    conversationId,
+    sendMessage,
+    sendGift,
+    sendFavourShare,
+    sendEnvelope,
+    updateMessage,
+  };
 }
 
 export async function fetchConversations(

@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Favour } from "@/server/db/schema";
+import { ShareFavourModal } from "@/components/ShareFavourModal";
 
 type FavourWithUsernames = Favour & {
   creatorUsername?: string | null;
@@ -63,6 +65,7 @@ export function FavourCard({
   onDelete,
 }: FavourCardProps) {
   const router = useRouter();
+  const [shareOpen, setShareOpen] = useState(false);
   const isCreator = currentWallet === favour.creatorWallet;
   const isClaimer = currentWallet === favour.claimerWallet;
   const canDelete =
@@ -76,32 +79,61 @@ export function FavourCard({
     }
   };
 
+  const handleShareClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShareOpen(true);
+  };
+
+  const handleShare = (recipientWallet: string, message?: string) => {
+    router.push(
+      `/messages/${recipientWallet}?shareFavour=${favour.id}${message ? `&shareMsg=${encodeURIComponent(message)}` : ""}`
+    );
+  };
+
   return (
+    <>
     <Link href={`/favour/${favour.id}`} className="block group relative">
       <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5 space-y-3 transition-all hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-sm">
-        {/* Delete button (creator, open favours only) */}
-        {canDelete && (
-          <button
-            type="button"
-            onClick={handleDeleteClick}
-            className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors z-10"
-            aria-label="Delete favour"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        {/* Action buttons */}
+        <div className="absolute top-4 right-4 flex items-center gap-1 z-10">
+          {/* Share button */}
+          {currentWallet && (
+            <button
+              type="button"
+              onClick={handleShareClick}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors"
+              aria-label="Share favour"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-          </button>
-        )}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+            </button>
+          )}
+          {/* Delete button */}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+              aria-label="Delete favour"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
 
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
@@ -218,5 +250,16 @@ export function FavourCard({
         </div>
       </div>
     </Link>
+    {shareOpen && currentWallet && (
+      <ShareFavourModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        favourId={favour.id}
+        favourTitle={favour.title}
+        currentWallet={currentWallet}
+        onShare={handleShare}
+      />
+    )}
+    </>
   );
 }
